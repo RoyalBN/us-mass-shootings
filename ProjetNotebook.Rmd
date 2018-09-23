@@ -1,0 +1,214 @@
+---
+title: "US Mass Shooting 1966-2017"
+output: html_notebook : smart : false
+---
+
+Sujet : Cette étude porte sur les différentes attaques terroristes ou autres qui se sont produites aux Etats-Unis entre 1966 et 2017.
+
+
+Afin de développer nos analyses, nous allons utiliser différents types de graphes ainsi que tableaux. Pour cela nous incluons toutes les bibliothèques ci-dessous.
+
+```{r}
+
+library(tidyverse)
+library(ggplot2)
+library(ggmap)
+library(maps)
+library(mapdata)
+library(mapproj)
+library(rworldmap)
+#library(rworldxtra)
+
+```
+
+
+
+Ci-dessous, nous lisons le fichier .csv qui s'appelle "MassShootingsDataset.csv" et qui contient toutes les informations principales. On a : le titre, la localisation, la date, un resume, le nombre de morts, le nombre de blessés, le nombre total de victimes (blessés + morts), les problèmes mentaux du/des terroriste(s) ou criminel, la race, le sexe et les coordonnees géographiques des attaques (latitude et longitude).
+
+Pour nous facilier le travail dans la manipulation des données, nous avons créés ci-dessous de nouvelles variables dans lesquelles nous allons mettre les données des différentes colonnes.
+
+```{r}
+
+Shootings <- read.csv(file="MassShootingsDataset.csv", head = TRUE)
+Shootings
+
+title <- Shootings$Title
+location <- Shootings$Location
+date <- Shootings$Date
+fatalities <- Shootings$Fatalities
+injured <- Shootings$Injured
+victims <- Shootings$Total.victims
+mental <- Shootings$Mental.Health.Issues
+race <- Shootings$Race
+gender <- Shootings$Gender
+longitude <- Shootings$Longitude
+latitude <- Shootings$Latitude
+
+```
+
+
+
+Ci-dessous, nous avons décidés de récupérer pour chacune des dates, l'année correspondante afin de l'afficher plus simplement dans nos graphes.
+
+```{r}
+
+annee <- format(as.Date(date, format="%m/%d/%Y"),"%Y")
+annee_date <- as.numeric(annee)
+annee_date
+
+```
+
+
+
+
+Ci-dessous, comme nous avions plusieurs catégories d'identifications identiques mais écrites différement telle que "White" et "white" ou "Black" et "black", 
+nous avons décidé de les regrouper en une seule catégorie.
+
+```{r}
+
+levels(race) <- c("Unknown","Asian","Asian American","Asian American/Some other race","Black","Black","Black American or African American","Black American or African American/Unknown","Latino","Native American","Native American or Alaska Native","Other","Other","Two or more races","Unclear","Unknown","White","White","White","White American or European American","White American or European American/Some other Race")
+levels(race)
+
+```
+
+
+
+
+De même, comme nous avions plusieurs catégories d'identifications identiques mais écrites différement telle que "Male" et "M" ou "Female" et "F", nous avons décidé de les regrouper en une seule catégorie.
+
+```{r}
+
+levels(gender) <- c("Unknown","Female","Male","Male/Female","Male","Male/Female","Unknown")
+levels(gender)
+
+```
+
+
+
+De la même manière, ci-dessous, comme nous avions plusieurs catégories d'identifications identiques mais écrites différement telle que "Unclear" et "unclear" ou "Unknown" et "unknown", nous avons décidé de les regrouper en une seule catégorie.
+
+```{r}
+
+levels(mental) <- c("No","Unclear","Unclear","Unknown","Unknown","Yes")
+levels(mental)
+
+```
+
+
+
+Ci-dessous, nous avons six graphes de type plus ou moins proches. Voir apres les graphes pour les commentaires.
+
+```{r}
+
+# Dot Plot: Total des Victimes par Année: 1966-2017
+p <- ggplot(Shootings, aes(x=annee_date, y=victims)) + xlab("Années") + ylab("Total de Victimes") 
+p <- p + geom_point() + ggtitle("Total des Victimes par Année: 1966-2017")
+p
+
+# Grouped: Total de Victimes par Année 
+p <- ggplot(Shootings, aes(fill=victims, y=victims, x=annee_date)) + xlab("Années") + ylab("Total de Victimes") 
+p <- p + geom_bar(position="dodge", stat="identity" ) + ggtitle("Total de Victimes par Année")
+p
+
+# Stacked: Nombre de Victimes par rapport aux Années et Sexe des Auteurs
+p <- ggplot(Shootings, aes(fill=gender, y=victims, x=annee_date)) + xlab("Années") + ylab("Total de Victimes") 
+p <- p + geom_bar(stat="identity" ) + ggtitle("Nombre de Victimes par rapport aux Années et Sexe des Auteurs")
+p
+
+# Stacked Percent: Nombre de Victimes par rapport à la Race et au Sexe des Auteurs
+p <- ggplot(Shootings, aes(fill=race, y=victims, x=gender)) + xlab("Sexe") + ylab("Total de Victimes") 
+p <- p + geom_bar(stat="identity" ) + ggtitle("Nombre de Victimes par rapport à la Race et au Sexe des Auteurs \n\n")
+p
+
+# Stacked Percent: Nombre de Victimes par rapport au Années et Race des Auteurs
+p <- ggplot(Shootings, aes(fill=race, y=victims, x=annee_date)) + xlab("Années") + ylab("Total de Victimes") 
+p <- p + geom_bar(stat="identity") + ggtitle("Nombre de Victimes par rapport au Années et Race des Auteurs \n\n")
+p
+
+# Stacked Percent: Problèmes Mentaux des Auteurs en fonction des Races
+p <- ggplot(Shootings, aes(fill=race, y=victims, x=mental)) + xlab("Problème Mentale") + ylab("Total de Victimes") 
+p <- p + geom_bar(stat="identity" ) + ggtitle("Problèmes Mentaux des Auteurs en fonction des Races \n\n")
+p
+
+```
+
+
+1er Graphe ("Total des Victimes par Année: 1966-2017"): Le premier graphe ci-dessus, de type DotPlot, affiche les différents points correspondant aux nombre total                                                         de victimes par année entre 1966 et 2017. Comme on peut le constater, en 1966 seul deux attaques ont eu                                                           lieux aux Etats-Unis avant d'en rencontrer de nouveaux dans les années 1970 et massivement dans les années                                                         1980. 
+
+
+2ème Graphe ("Total de Victimes par Année"): Le deuxième graphe ci-dessus, de type BarPlot Grouped, affiche les différentes barres correspondantes aux nombre                                                  total de victimes par année entre 1966 et 2017. L'analyse pour ce graphe est identique à celui du premier. En 1966                                                seul deux attaques ont eu lieux aux Etats-Unis avant d'en rencontrer de nouveaux dans les années 1970 et massivement                                              dans les années 1980. 
+
+
+3ème Graphe ("Nombre de Victimes / aux Années et Sexe des Auteurs"): Le troisième graphe ci-dessus, de type BarPlot Stacked, affiche les différentes                                                                                   barres correspondantes aux nombre total de victimes par année en prenant en compte                                                                                le sexe des auteurs des attaques entre 1966 et 2017. On remarque un nombre                                                                                        important d'attaques commises par des hommes mais aussi un petit nombre commis par                                                                                des femmes vers la fin des années 1970 et 1980 et une légère augmentation dans les                                                                                années 2000. On peut également constater qu'il y a des attaques commises par des                                                                                  groupes soit d'hommes ou de femmes ou des deux mélangés, ils sont représentés sur                                                                                 le graphe comme "Male/Female" ou "Unknown". 
+
+
+4ème Graphe ("Nombre de Victimes / à la Race et au Sexe des Auteurs"): Le quatrième graphe ci-dessus, de type BarPlot Stacked Percent, affiche les                                                                                       différentes barres correspondantes aux nombre total de victimes par sexe en                                                                                       prenant en compte la ou les race(s) des auteurs des attaques entre 1966 et 2017.                                                                                  On remarque une fois de plus que les hommes sont plus majoritairement auteurs de                                                                                  nombreuses attaques et réponsables du plus grands nombre de victimes au total.                                                                                    Pour la plupart des hommes, il s'agit d'homme Blanc Américain ou Blanc Européen.                                                                                  Il y a également un quart des attaques qui sont commises par des Noirs Africains ou                                                                               Noirs Américains. 
+
+
+5ème Graphe ("Nombre de Victimes / au Années et Race des Auteurs"): Le cinquième graphe ci-dessus, de type BarPlot Stacked Percent, affiche les                                                                                       différentes barres correspondantes aux nombre total de victimes par année en prenant                                                                              en compte la ou les race(s) des auteurs des attaques entre 1966 et 2017. On se rend                                                                               compte que l'homme Blanc Américain ou l'homme Blanc Européen est majoritaire. On                                                                                  constate également le début des attaques par des hommes Noirs Américains au début                                                                                 des années 1970, qui correspond plus ou moins à la période des droits civiques                                                                                    américains avant de connaître une augmentation à partir des années 1980,                                                                                          certainement due aux violences entre gangs.
+
+
+6ème Graphe ("Problèmes Mentaux des Auteurs en fonction des Races"): Le sixième graphe ci-dessus, de type BarPlot Stacked Percent, affiche les différentes barres                                                                      correspondantes aux nombre total de victimes en fonction des problèmes mentaux des auteurs en                                                                      prenant en compte la ou les race(s) des auteurs des attaques entre 1966 et 2017. On remarque                                                                      que la grande majorité des auteurs d'attaques sont ou ont été atteints de maladies mentales                                                                       tandis que les autres ne démontrent pas réellement de maladies mentales ou sont tout                                                                              simplement inconnues.
+
+
+
+
+Ci-dessous, nous avons mis géographiquement sur les cartes, les divers points indiquant le lieu des attaques. Voir analyse en dessous des cartes.
+
+```{r}
+
+usa <- map_data("usa")
+us <- map_data("state")
+map("worldHires","USA", col="black", fill=TRUE)
+
+# 1ère carte: Points Rouge indiquants les lieux des attaques
+x <- ggplot() + geom_polygon(data=us, aes(x=long, y=lat, group=group), color="white", size=0.15)+
+  geom_point(data=Shootings, aes(x=longitude, y=latitude), colour="red", fill="red",pch=21, size=2, alpha=I(0.7))  
+  #geom_text(data=states, aes(x=x, y=y, label=state.abb, color="whitee", size=3))
+x
+
+# 2ème carte: Points de Couleurs indiquants les lieux ainsi que la race des auteurs
+x <- ggplot() + geom_polygon(data=us, aes(x=long, y=lat, group=group), color="white", size=0.15)+
+  geom_point(data=Shootings, aes(x=longitude, y=latitude, col=race, fill=race),pch=21, size=2)  
+  #geom_text(data=states, aes(x=x, y=y, label=state.abb, color="whitee", size=3))
+x
+
+```
+
+1ère carte: On remarque que la Côte Est des Etats-Unis est fortement touchée par des tueries. Quelques Etats de la Côté Ouest des Etats-Unis tels que la                      Californie ou Washington sont aussi touchés. Les deux autres points rouges en dehors de la carte se situent en Alaska et à Hawaï. 
+
+
+2ème carte: On remarque que la Côte Est des Etats-Unis est fortement touchée par des tueries. Quelques Etats de la Côté Ouest des Etats-Unis tels que la                      Californie ou Washington sont aussi touchés. Les deux autres points rouges en dehors de la carte se situent en Alaska et à Hawaï. De plus, on constate             que les attaques sur la Côte Est des Etats-Unis ont été commises par des personnes de race Noire, on peut de plus supposer par rapport à nos données              qu'il s'agit d'attaques ayant commencées depuis la fin des années 1960 jusqu'à aujourd'hui et pour des causes soit politiques (lutte des droits                   civiques vers la fin des années 1960) ou des réglements de compte entre gang. En revanche, sur la Côte Ouest des Etats-Unis, on remarque que les                  attaques ont été commises par des personnes de race blanche ou autre.
+
+
+
+```{r}
+
+amemap <- getMap(resolution = "li")
+
+americas.limits <- read.csv(file="map.csv", head = TRUE)
+
+americas.limits
+
+plot(amemap,
+   xlim = range(americas.limits$lon),
+   ylim = range(americas.limits$lat),
+   asp = 1
+)
+points(longitude, latitude, col="red", cex= 1)
+
+
+```
+
+Ci-dessus, une autre carte avec cette fois-ci tout les points compris dedans. La carte ici est réalisée à partir de limites géographiques, partant de l'Alaska jusqu'a peu près le Nicaragua. L'analyse pour cette carte est identique à la précédente.
+
+
+
+
+
+
+
+
+
+
+
